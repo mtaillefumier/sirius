@@ -67,73 +67,83 @@ unit_step_function_form_factors(double R__, double g__)
 }
 
 template <>
-spfft::Grid& Simulation_context::spfft_grid_coarse<double>()
+spfft::Grid&
+Simulation_context::spfft_grid_coarse<double>()
 {
     return *spfft_grid_coarse_;
 }
 
 #ifdef USE_FP32
 template <>
-spfft::GridFloat& Simulation_context::spfft_grid_coarse<float>()
-    {
-        return *spfft_grid_coarse_float_;
-    }
+spfft::GridFloat&
+Simulation_context::spfft_grid_coarse<float>()
+{
+    return *spfft_grid_coarse_float_;
+}
 #endif
 
 template <>
-spfft::Transform& Simulation_context::spfft<double>()
+spfft::Transform&
+Simulation_context::spfft<double>()
 {
     return *spfft_transform_;
 }
 
 #ifdef USE_FP32
 template <>
-spfft::TransformFloat& Simulation_context::spfft<float>()
-    {
-        return *spfft_transform_float_;
-    }
+spfft::TransformFloat&
+Simulation_context::spfft<float>()
+{
+    return *spfft_transform_float_;
+}
 #endif
 
 template <>
-spfft::Transform const& Simulation_context::spfft<double>() const
+spfft::Transform const&
+Simulation_context::spfft<double>() const
 {
     return *spfft_transform_;
 }
 
 #ifdef USE_FP32
 template <>
-spfft::TransformFloat const& Simulation_context::spfft<float>() const
-    {
-        return *spfft_transform_float_;
-    }
+spfft::TransformFloat const&
+Simulation_context::spfft<float>() const
+{
+    return *spfft_transform_float_;
+}
 #endif
 
 template <>
-spfft::Transform& Simulation_context::spfft_coarse<double>()
+spfft::Transform&
+Simulation_context::spfft_coarse<double>()
 {
     return *spfft_transform_coarse_;
 }
 
 #ifdef USE_FP32
 template <>
-spfft::TransformFloat& Simulation_context::spfft_coarse<float>()
-    {
-        return *spfft_transform_coarse_float_;
-    }
+spfft::TransformFloat&
+Simulation_context::spfft_coarse<float>()
+{
+    return *spfft_transform_coarse_float_;
+}
 #endif
 
 template <>
-spfft::Transform const& Simulation_context::spfft_coarse<double>() const
+spfft::Transform const&
+Simulation_context::spfft_coarse<double>() const
 {
     return *spfft_transform_coarse_;
 }
 
 #ifdef USE_FP32
 template <>
-spfft::TransformFloat const& Simulation_context::spfft_coarse<float>() const
-    {
-        return *spfft_transform_coarse_float_;
-    }
+spfft::TransformFloat const&
+Simulation_context::spfft_coarse<float>() const
+{
+    return *spfft_transform_coarse_float_;
+}
 #endif
 
 void
@@ -1042,15 +1052,13 @@ Simulation_context::update()
         auto spl_z = split_fft_z(fft_coarse_grid_[2], comm_fft_coarse());
 
         /* create spfft buffer for coarse transform */
-        spfft_grid_coarse_ = std::unique_ptr<spfft::Grid>(
-            new spfft::Grid(fft_coarse_grid_[0], fft_coarse_grid_[1], fft_coarse_grid_[2],
-                            gvec_coarse_partition_->zcol_count_fft(), spl_z.local_size(), spfft_pu, -1,
-                            comm_fft_coarse().mpi_comm(), SPFFT_EXCH_DEFAULT));
+        spfft_grid_coarse_ = std::unique_ptr<spfft::Grid>(new spfft::Grid(
+            fft_coarse_grid_[0], fft_coarse_grid_[1], fft_coarse_grid_[2], gvec_coarse_partition_->zcol_count_fft(),
+            spl_z.local_size(), spfft_pu, -1, comm_fft_coarse().mpi_comm(), SPFFT_EXCH_DEFAULT));
 #ifdef USE_FP32
-        spfft_grid_coarse_float_ = std::unique_ptr<spfft::GridFloat>(
-            new spfft::GridFloat(fft_coarse_grid_[0], fft_coarse_grid_[1], fft_coarse_grid_[2],
-                                 gvec_coarse_partition_->zcol_count_fft(), spl_z.local_size(), spfft_pu, -1,
-                                 comm_fft_coarse().mpi_comm(), SPFFT_EXCH_DEFAULT));
+        spfft_grid_coarse_float_ = std::unique_ptr<spfft::GridFloat>(new spfft::GridFloat(
+            fft_coarse_grid_[0], fft_coarse_grid_[1], fft_coarse_grid_[2], gvec_coarse_partition_->zcol_count_fft(),
+            spl_z.local_size(), spfft_pu, -1, comm_fft_coarse().mpi_comm(), SPFFT_EXCH_DEFAULT));
 #endif
         /* create spfft transformations */
         const auto fft_type_coarse = gvec_coarse().reduced() ? SPFFT_TRANS_R2C : SPFFT_TRANS_C2C;
@@ -1081,26 +1089,24 @@ Simulation_context::update()
 
         /* create spfft buffer for fine-grained transform */
         spfft_grid_ = std::unique_ptr<spfft::Grid>(
-            new spfft::Grid(fft_grid_[0], fft_grid_[1], fft_grid_[2],
-                            gvec_partition_->zcol_count_fft(), spl_z.local_size(), spfft_pu, -1,
-                            comm_fft().mpi_comm(), SPFFT_EXCH_DEFAULT));
+            new spfft::Grid(fft_grid_[0], fft_grid_[1], fft_grid_[2], gvec_partition_->zcol_count_fft(),
+                            spl_z.local_size(), spfft_pu, -1, comm_fft().mpi_comm(), SPFFT_EXCH_DEFAULT));
 #ifdef USE_FP32
         spfft_grid_float_ = std::unique_ptr<spfft::GridFloat>(
-            new spfft::GridFloat(fft_grid_[0], fft_grid_[1], fft_grid_[2],
-                                 gvec_partition_->zcol_count_fft(), spl_z.local_size(), spfft_pu, -1,
-                                 comm_fft().mpi_comm(), SPFFT_EXCH_DEFAULT));
+            new spfft::GridFloat(fft_grid_[0], fft_grid_[1], fft_grid_[2], gvec_partition_->zcol_count_fft(),
+                                 spl_z.local_size(), spfft_pu, -1, comm_fft().mpi_comm(), SPFFT_EXCH_DEFAULT));
 #endif
         const auto fft_type = gvec().reduced() ? SPFFT_TRANS_R2C : SPFFT_TRANS_C2C;
 
         auto gv = gvec_partition_->get_gvec();
 
         spfft_transform_.reset(new spfft::Transform(spfft_grid_->create_transform(
-            spfft_pu, fft_type, fft_grid_[0], fft_grid_[1], fft_grid_[2],
-            spl_z.local_size(), gvec_partition_->gvec_count_fft(), SPFFT_INDEX_TRIPLETS, gv.at(memory_t::host))));
+            spfft_pu, fft_type, fft_grid_[0], fft_grid_[1], fft_grid_[2], spl_z.local_size(),
+            gvec_partition_->gvec_count_fft(), SPFFT_INDEX_TRIPLETS, gv.at(memory_t::host))));
 #ifdef USE_FP32
         spfft_transform_float_.reset(new spfft::TransformFloat(spfft_grid_float_->create_transform(
-            spfft_pu, fft_type, fft_grid_[0], fft_grid_[1], fft_grid_[2],
-            spl_z.local_size(), gvec_partition_->gvec_count_fft(), SPFFT_INDEX_TRIPLETS, gv.at(memory_t::host))));
+            spfft_pu, fft_type, fft_grid_[0], fft_grid_[1], fft_grid_[2], spl_z.local_size(),
+            gvec_partition_->gvec_count_fft(), SPFFT_INDEX_TRIPLETS, gv.at(memory_t::host))));
 #endif
 
         /* copy G-vectors to GPU; this is done once because Miller indices of G-vectors
@@ -1307,13 +1313,13 @@ Simulation_context::update()
         };
 
         if (!atomic_wf_ri_ || atomic_wf_ri_->qmax() < new_gk_cutoff) {
-            atomic_wf_ri_ = std::unique_ptr<Radial_integrals_atomic_wf<false>>(
-                new Radial_integrals_atomic_wf<false>(unit_cell(), new_gk_cutoff, 20, idxr_wf, ps_wf));
+            atomic_wf_ri_ = std::unique_ptr<Radial_integrals_atomic_wf<false>>(new Radial_integrals_atomic_wf<false>(
+                unit_cell(), new_gk_cutoff, 20, idxr_wf, ps_wf, atomic_wf_ri_callback_));
         }
 
         if (!atomic_wf_ri_djl_ || atomic_wf_ri_djl_->qmax() < new_gk_cutoff) {
             atomic_wf_ri_djl_ = std::unique_ptr<Radial_integrals_atomic_wf<true>>(
-                new Radial_integrals_atomic_wf<true>(unit_cell(), new_gk_cutoff, 20, idxr_wf, ps_wf));
+                new Radial_integrals_atomic_wf<true>(unit_cell(), new_gk_cutoff, 20, idxr_wf, ps_wf, nullptr));
         }
 
         auto idxr_wf_hub = [&](int iat) -> sirius::experimental::radial_functions_index const& {
@@ -1326,12 +1332,12 @@ Simulation_context::update()
 
         if (!hubbard_wf_ri_ || hubbard_wf_ri_->qmax() < new_gk_cutoff) {
             hubbard_wf_ri_ = std::unique_ptr<Radial_integrals_atomic_wf<false>>(
-                new Radial_integrals_atomic_wf<false>(unit_cell(), new_gk_cutoff, 20, idxr_wf_hub, ps_wf_hub));
+                new Radial_integrals_atomic_wf<false>(unit_cell(), new_gk_cutoff, 20, idxr_wf_hub, ps_wf_hub, nullptr));
         }
 
         if (!hubbard_wf_ri_djl_ || hubbard_wf_ri_djl_->qmax() < new_gk_cutoff) {
             hubbard_wf_ri_djl_ = std::unique_ptr<Radial_integrals_atomic_wf<true>>(
-                new Radial_integrals_atomic_wf<true>(unit_cell(), new_gk_cutoff, 20, idxr_wf_hub, ps_wf_hub));
+                new Radial_integrals_atomic_wf<true>(unit_cell(), new_gk_cutoff, 20, idxr_wf_hub, ps_wf_hub, nullptr));
         }
         /* update augmentation operator */
         memory_pool* mp{nullptr};
@@ -1471,9 +1477,8 @@ Simulation_context::init_atoms_to_grid_idx(double R__)
     int z_off = spfft<double>().local_z_offset();
     vector3d<int> grid_beg(0, 0, z_off);
     vector3d<int> grid_end(spfft<double>().dim_x(), spfft<double>().dim_y(), z_off + spfft<double>().local_z_length());
-    std::vector<vector3d<double>> verts_cart{{-R__, -R__, -R__}, {R__, -R__, -R__}, {-R__, R__, -R__},
-                                             {R__, R__, -R__},   {-R__, -R__, R__}, {R__, -R__, R__},
-                                             {-R__, R__, R__},   {R__, R__, R__}};
+    std::vector<vector3d<double>> verts_cart{{-R__, -R__, -R__}, {R__, -R__, -R__}, {-R__, R__, -R__}, {R__, R__, -R__},
+                                             {-R__, -R__, R__},  {R__, -R__, R__},  {-R__, R__, R__},  {R__, R__, R__}};
 
     auto bounds_box = [&](vector3d<double> pos) {
         std::vector<vector3d<double>> verts;
