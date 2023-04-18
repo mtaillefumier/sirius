@@ -1,9 +1,9 @@
-if(USE_VCSQNM)
+if(SIRIUS_USE_VCSQNM)
   find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 endif()
 add_executable(sirius.scf sirius.scf.cpp)
 target_link_libraries(sirius.scf PRIVATE sirius sirius::filesystem)
-if(USE_VCSQNM)
+if(SIRIUS_USE_VCSQNM)
   target_link_libraries (sirius.scf PRIVATE Eigen3::Eigen sirius)
 endif()
 install(TARGETS sirius.scf RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
@@ -19,7 +19,7 @@ set(SIRIUS_SCF_FLAGS_cpu_band_parallel    --control.processing_unit=cpu --contro
 
 # todo: Add OMP_NUM_THREADS + srun / mpiexec flags here too?
 
-if(BUILD_TESTING)
+if(SIRIUS_BUILD_TESTING)
     file(GLOB dirs LIST_DIRECTORIES true "${CMAKE_SOURCE_DIR}/verification/test*")
 
     foreach(full_path ${dirs})

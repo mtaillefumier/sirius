@@ -303,24 +303,46 @@ class Sirius(CMakePackage, CudaPackage, ROCmPackage):
     def cmake_args(self):
         spec = self.spec
 
-        args = [
-            self.define_from_variant("USE_OPENMP", "openmp"),
-            self.define_from_variant("USE_ELPA", "elpa"),
-            self.define_from_variant("USE_MAGMA", "magma"),
-            self.define_from_variant("USE_NLCGLIB", "nlcglib"),
-            self.define_from_variant("USE_VDWXC", "vdwxc"),
-            self.define_from_variant("USE_MEMORY_POOL", "memory_pool"),
-            self.define_from_variant("USE_SCALAPACK", "scalapack"),
-            self.define_from_variant("CREATE_FORTRAN_BINDINGS", "fortran"),
-            self.define_from_variant("CREATE_PYTHON_MODULE", "python"),
-            self.define_from_variant("USE_CUDA", "cuda"),
-            self.define_from_variant("USE_ROCM", "rocm"),
-            self.define_from_variant("BUILD_TESTING", "tests"),
-            self.define_from_variant("BUILD_APPS", "apps"),
-            self.define_from_variant("BUILD_SHARED_LIBS", "shared"),
-            self.define_from_variant("USE_FP32", "single_precision"),
-            self.define_from_variant("USE_PROFILER", "profiler"),
-        ]
+        args = []
+
+        if "@:7.4" in spec:
+            args = [
+                self.define_from_variant("USE_OPENMP", "openmp"),
+                self.define_from_variant("USE_ELPA", "elpa"),
+                self.define_from_variant("USE_MAGMA", "magma"),
+                self.define_from_variant("USE_NLCGLIB", "nlcglib"),
+                self.define_from_variant("USE_VDWXC", "vdwxc"),
+                self.define_from_variant("USE_MEMORY_POOL", "memory_pool"),
+                self.define_from_variant("USE_SCALAPACK", "scalapack"),
+                self.define_from_variant("CREATE_FORTRAN_BINDINGS", "fortran"),
+                self.define_from_variant("CREATE_PYTHON_MODULE", "python"),
+                self.define_from_variant("USE_CUDA", "cuda"),
+                self.define_from_variant("USE_ROCM", "rocm"),
+                self.define_from_variant("BUILD_TESTING", "tests"),
+                self.define_from_variant("BUILD_APPS", "apps"),
+                self.define_from_variant("BUILD_SHARED_LIBS", "shared"),
+                self.define_from_variant("USE_FP32", "single_precision"),
+                self.define_from_variant("USE_PROFILER", "profiler"),
+            ]
+        else:
+            args = [
+                self.define_from_variant("SIRIUS_USE_OPENMP", "openmp"),
+                self.define_from_variant("SIRIUS_USE_ELPA", "elpa"),
+                self.define_from_variant("SIRIUS_USE_MAGMA", "magma"),
+                self.define_from_variant("SIRIUS_USE_NLCGLIB", "nlcglib"),
+                self.define_from_variant("SIRIUS_USE_VDWXC", "vdwxc"),
+                self.define_from_variant("SIRIUS_USE_MEMORY_POOL", "memory_pool"),
+                self.define_from_variant("SIRIUS_USE_SCALAPACK", "scalapack"),
+                self.define_from_variant("SIRIUS_CREATE_FORTRAN_BINDINGS", "fortran"),
+                self.define_from_variant("SIRIUS_CREATE_PYTHON_MODULE", "python"),
+                self.define_from_variant("SIRIUS_USE_CUDA", "cuda"),
+                self.define_from_variant("SIRIUS_USE_ROCM", "rocm"),
+                self.define_from_variant("SIRIUS_BUILD_TESTING", "tests"),
+                self.define_from_variant("SIRIUS_BUILD_APPS", "apps"),
+                self.define_from_variant("SIRIUS_BUILD_SHARED_LIBS", "shared"),
+                self.define_from_variant("SIRIUS_USE_FP32", "single_precision"),
+                self.define_from_variant("SIRIUS)USE_PROFILER", "profiler"),
+
 
         lapack = spec["lapack"]
         blas = spec["blas"]
@@ -348,7 +370,10 @@ class Sirius(CMakePackage, CudaPackage, ROCmPackage):
             )
 
         if spec["blas"].name in ["intel-mkl", "intel-parallel-studio"]:
-            args.append(self.define("USE_MKL", "ON"))
+            if "@:7.4" in spec:
+                args.append(self.define("USE_MKL", "ON"))
+            else
+                args.append(self.define("SIRIUS_USE_MKL", "ON"))
 
         if "+elpa" in spec:
             elpa_incdir = os.path.join(spec["elpa"].headers.directories[0], "elpa")

@@ -1,33 +1,34 @@
 include(FindPackageHandleStandardArgs)
 
-find_path(FFTW_INCLUDE_DIR
+find_path(SIRIUS_FFTW_INCLUDE_DIRS
   NAMES fftw3.h
   PATH_SUFFIXES include include/fftw
   HINTS ENV MKLROOT
   HINTS ENV FFTWROOT
   HINTS ENV FFTW_INC
-  )
+)
 
-find_library(FFTW_LIBRARIES
+find_library(SIRIUS_FFTW_LIBRARIES
   NAMES fftw3
   PATH_SUFFIXES lib
   HINTS ENV MKLROOT
   HINTS ENV FFTW_DIR
   HINTS ENV FFTWROOT
-  )
+)
 
-set(FFTW_INCLUDE_DIRS ${FFTW_INCLUDE_DIR})
-
-if(FFTW_LIBRARIES MATCHES "NOTFOUND")
-  # ok, fftw libraries not found.
-  # MKL contains fftw, lets assume we use MKL
-  # TODO: handle this properly
-  set(FFTW_LIBRARIES "")
+if (SIRIUS_FFTW_INCLUDE_DIRS)
   find_package_handle_standard_args(FFTW
-    REQUIRED_VARS FFTW_INCLUDE_DIR )
-  mark_as_advanced(FFTW_FOUND FFTW_INCLUDE_DIR)
+    REQUIRED_VARS SIRIUS_FFTW_INCLUDE_DIRS SIRIUS_FFTW_LIBRARIES)
 else()
   find_package_handle_standard_args(FFTW
-    REQUIRED_VARS FFTW_INCLUDE_DIR FFTW_LIBRARIES)
-  mark_as_advanced(FFTW_FOUND FFTW_INCLUDE_DIR FFTW_LIBRARIES)
+    REQUIRED_VARS SIRIUS_FFTW_LIBRARIES)
 endif()
+set(SIRIUS_FFTW_FOUND TRUE)
+if (NOT TARGET sirius::fftw)
+  add_library(sirius::fftw INTERFACE IMPORTED)
+  set_target_properties(sirius::mkl PROPERTIES
+    INTERFACE_INCLUDE_DIRECTORIES "${SIRIUS_FFTW_INCLUDE_DIRS}"
+    INTERFACE_LINK_LIBRARIES "${SIRIUS_FFTW_LIBRARIES}")
+endif()
+
+mark_as_advanced(SIRIUS_FFTW_FOUND SIRIUS_FFTW_INCLUDE_DIRS SIRIUS_FFTW_LIBRARIES)
