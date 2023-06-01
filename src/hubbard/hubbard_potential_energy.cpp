@@ -28,6 +28,32 @@ namespace sirius {
 
 /* we can use Ref PRB {\bf 102}, 235159 (2020) as reference for the collinear case.  */
 
+  static void generate_constrained_potential(Simulation_context const& ctx__,
+                                             Atom_type const& atom_type__,
+                                             const int idx_hub_wf,
+                                             const int at_lvl,
+                                             sddk::mdarray<std::complex<double>, 3> const& om__, // __unused__
+                                             sddk::mdarray<std::complex<double>, 3> const& om_ref__, // __unused__
+                                             sddk::mdarray<std::complex<double>, 3> const& lagrange_multiplier__,
+                                             sddk::mdarray<std::complex<double>, 3>& um__)
+  {
+    auto& hub_wf = atom_type__.lo_descriptor_hub(idx_hub_wf);
+
+    if (!hub_wf.use_for_constrained_hubbard()) {
+      return;
+    }
+
+    int const lmax_at = 2 * hub_wf.l() + 1;
+    for (int is = 0; is < ctx__.num_spins(); is++) {
+      for (int m1 = 0; m1 < lmax_at; m1++) {
+        for (int m2 = 0; m2 < lmax_at; m2++) {
+          um__(m2, m1, is) += lagrange_multiplier__(m2, m1, is);
+        }
+      }
+    }
+  }
+
+
 static void
 generate_potential_collinear_nonlocal(Simulation_context const& ctx__, const int index__,
                                       sddk::mdarray<std::complex<double>, 3> const& om__,
@@ -161,6 +187,41 @@ generate_potential_collinear_local(Simulation_context const& ctx__, Atom_type co
     }
 }
 
+static double calculate_energy_constrained_contribution(Simulation_context const& ctx__, 
+                                                        Atom_type const& atom_type__,
+                                                        const int idx_hub_wf,
+                                                        sddk::mdarray<std::complex<double>, 3> const& om__,
+                                                        sddk::mdarray<std::complex<double>, 3> const& om_constraints__,
+                                                        sddk::mdarray<std::complex<double>, 3> const& lagrange_multipliers__)
+{
+  std::complex<double> hubbard_energy_constraint{0};
+  /* quick exit */
+
+  /* single orbital implementation */
+  auto& hub_wf = atom_type__.lo_descriptor_hub(idx_hub_wf);
+
+  if (!hub_wf.use_for_calculation())
+      return 0.0;
+
+  if (!hub_wf.use_for_constrained_hubbard())
+    return 0.0;
+
+  int const lmax_at = 2 * hub_wf.l() + 1;
+  for (int is = 0; is < ctx__.num_spins(); is++) {
+
+       // is = 0 up-up
+       // is = 1 down-down
+
+    for (int m1 = 0; m1 < lmax_at; m1++) {
+        for (int m2 = 0; m2 < lmax_at; m2++) {
+          hubbard_energy_constraint += (om__(m2, m1, is) - om_constraints__(m2, m1, is)) * lagrange_multipliers__(m2, m1, is);
+        }
+    }
+  }
+
+  return std::real(hubbard_energy_constraint);
+}
+
 static double
 calculate_energy_collinear_nonlocal(Simulation_context const& ctx__, const int index__,
                                     sddk::mdarray<std::complex<double>, 3> const& om__)
@@ -187,6 +248,34 @@ calculate_energy_collinear_nonlocal(Simulation_context const& ctx__, const int i
 
     return -0.5 * hubbard_energy;
 }
+
+static double
+calculate_energy_collinear_nonlocal(Simulation_context const& ctx__, const int index__, const int at_lvl, 
+                                    sddk::mdarray<std::complex<double>, 3> const& om__)
+{
+  auto nl = ctx__.cfg().hubbard().nonlocal(index__);
+  double hubbard_energy{0.0};
+  double v_ij_ = nl.V() / ha2ev;
+  int il       = nl.l()[0];
+  int jl       = nl.l()[1];
+
+  // second term of Eq. 2
+  for (int is = 0; is < ctx__.num_spins(); is++) {
+    for (int m1 = 0; m1 < 2 * jl + 1; m1++) {
+      for (int m2 = 0; m2 < 2 * il + 1; m2++) {
+        hubbard_energy += v_ij_ * std::real(om__(m2, m1, is) * conj(om__(m2, m1, is)));
+      }
+    }
+  }
+
+  // non magnetic case
+  if (ctx__.num_spins() == 1) {
+    hubbard_energy *= 2.0;
+  }
+
+  return -0.5 * hubbard_energy;
+}
+
 
 static double
 calculate_energy_collinear_local(Simulation_context const& ctx__, Atom_type const& atom_type__, const int idx_hub_wf,
@@ -535,10 +624,18 @@ generate_potential(Hubbard_matrix const& om__, Hubbard_matrix& um__)
             ::sirius::generate_potential_non_collinear_local(ctx, atype, lo_ind, om__.local(at_lvl),
                                                              um__.local(at_lvl));
         }
+        
+        ::sirius::generate_constrained_potential(ctx,
+                                                 atype,
+                                                 lo_ind,
+                                                 at_lvl,
+                                                 om__.local(at_lvl),
+                                                 om__.multipliers_constraints(at_lvl),
+                                                 om__.local_constraints(at_lvl),
+                                                 um__.local(at_lvl));
     }
 
     for (int i = 0; i < static_cast<int>(ctx.cfg().hubbard().nonlocal().size()); i++) {
-
         if (ctx.num_mag_dims() != 3) {
             ::sirius::generate_potential_collinear_nonlocal(ctx, i, om__.nonlocal(i), um__.nonlocal(i));
         } // else {
@@ -563,6 +660,13 @@ energy(Hubbard_matrix const& om__)
         } else {
             energy += ::sirius::calculate_energy_non_collinear_local(ctx, atype, lo_ind, om__.local(at_lvl));
         }
+
+        energy += ::sirius::calculate_energy_constrained_contribution(ctx,
+                                                                      atype,
+                                                                      lo_ind,
+                                                                      om__.local(at_lvl),
+                                                                      om__.multipliers_constraints(at_lvl),
+                                                                      om__.local_constraints(at_lvl));
     }
 
     for (int i = 0; i < static_cast<int>(ctx.cfg().hubbard().nonlocal().size()); i++) {

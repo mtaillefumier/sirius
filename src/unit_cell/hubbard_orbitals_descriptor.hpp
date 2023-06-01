@@ -39,6 +39,9 @@ class hubbard_orbital_descriptor
     int l_{-1};
     /// Set to true if this orbital is part the Hubbard subspace.
     bool use_for_calculation_{true};
+
+    bool use_constrained_hubbard_;
+
     /// Orbital occupancy.
     double occupancy_{-1.0};
 
@@ -211,10 +214,11 @@ class hubbard_orbital_descriptor
     hubbard_orbital_descriptor(const int n__, const int l__, const int orbital_index__, const double occ__,
                                const double J__, const double U__, const double* hub_coef__, const double alpha__,
                                const double beta__, const double J0__, std::vector<double> initial_occupancy__,
-                               Spline<double> f__, bool use_for_calculations__, int idx_wf__)
+                               Spline<double> f__, bool use_for_calculations__, bool use_for_constrained_hubbard__, int idx_wf__)
         : n_(n__)
         , l_(l__)
         , use_for_calculation_(use_for_calculations__)
+        , use_constrained_hubbard_(use_for_constrained_hubbard__)
         , occupancy_(occ__)
         , f_(std::move(f__))
         , U_(U__)
@@ -243,6 +247,7 @@ class hubbard_orbital_descriptor
         : n_(src.n_)
         , l_(src.l_)
         , use_for_calculation_(src.use_for_calculation_)
+        , use_constrained_hubbard_(src.use_constrained_hubbard_)
         , occupancy_(src.occupancy_)
         , U_(src.U_)
         , J_(src.J_)
@@ -338,6 +343,12 @@ class hubbard_orbital_descriptor
     {
         return use_for_calculation_;
     }
+
+    bool use_for_constrained_hubbard() const
+    {
+      return use_constrained_hubbard_;
+    }
+
 
     auto const& initial_occupancy() const
     {

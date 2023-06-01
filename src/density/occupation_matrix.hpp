@@ -76,6 +76,7 @@ class Occupation_matrix : public Hubbard_matrix
 
     void symmetrize();
 
+    void calculate_constraints_and_error();
     void print_occupancies(int verbosity__) const;
 };
 

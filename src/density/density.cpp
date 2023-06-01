@@ -1140,7 +1140,11 @@ Density::generate(K_point_set const& ks__, bool symmetrize__, bool add_core__, b
             if (ctx_.hubbard_correction()) {
                 /* all symmetrization is done in the occupation_matrix class */
                 occupation_matrix_->symmetrize();
-            }
+            
+		if (ctx_.cfg().hubbard().constrained_hubbard_calculation()) {
+		    occupation_matrix_->calculate_constraints_and_error();
+		}
+	    }
 
             /* compare with reference density matrix */
             if (ctx_.cfg().control().verification() >= 1 && ctx_.cfg().parameters().use_ibz() == false) {

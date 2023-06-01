@@ -34,7 +34,7 @@
                 },
                 "beta_scaling_factor" : {
                     "type" : "number",
-                     "default" : 1.0,
+                    "default" : 1.0,
                     "title": "Scaling factor for mixing parameter"
                 },
                 "use_hartree" : {
@@ -786,6 +786,26 @@
                     "default" : false,
                     "title" : "If true, simplified version of Hubbard correction is used."
                 },
+                "constrained_hubbard_calculation" : {
+                    "type" : "boolean",
+                    "default" : false,
+                    "title" : "Use constrained hubbard occupations number. Occupation matrices should be given"
+                },
+                "constrained_hubbard_error" : {
+                    "type" : "number",
+                    "default" : 0.000001,
+                    "title" : "Error between the actual and requested occupation numbers"
+                },
+                "constrained_hubbard_max_iteration" : {
+                    "type" : "integer",
+                    "default" : 10,
+                    "title" : "Maximum number of constrained iterations before returning to the normal Hubbard scheme"
+                },
+                "hubbard_beta_mixing": {
+                    "type" : "number",
+                    "default": 0.4,
+                    "title" : "Mixing parameters for the constrained hubbard"
+                },
                 "local" : {
                     "type" : "array",
                     "items": {
@@ -793,6 +813,9 @@
                         "properties": {
                             "atom_type" : {
                                 "type" : "string"
+                            },
+                            "use_hubbard_constrained": {
+                                "type" : "boolean"
                             },
                             "n" : {
                                 "type" : "integer"

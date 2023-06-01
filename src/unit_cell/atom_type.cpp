@@ -809,6 +809,7 @@ Atom_type::read_hubbard_input()
 
     for (int i = 0; i < parameters_.cfg().hubbard().local().size(); i++) {
         auto ho = parameters_.cfg().hubbard().local(i);
+        bool const_hub = false;
         if (ho.atom_type() == this->label()) {
             std::array<double, 6> coeff{0, 0, 0, 0, 0, 0};
             if (ho.contains("U")) {
@@ -833,7 +834,15 @@ Atom_type::read_hubbard_input()
             for (int s = 0; s < 6; s++) {
                 coeff[s] /= ha2ev;
             }
+            if (ho.contains("use_hubbard_constrained")) {
+              if (ho.use_hubbard_constrained()) {
+                this->constrained_hubbard_ = true;
+                const_hub = true;
+              }
+            }
+
             std::vector<double> initial_occupancy;
+
             if (ho.contains("initial_occupancy")) {
                 initial_occupancy = ho.initial_occupancy();
 
@@ -847,7 +856,7 @@ Atom_type::read_hubbard_input()
             }
 
             add_hubbard_orbital(ho.n(), ho.l(), ho.total_initial_occupancy(), coeff[0], coeff[1], &coeff[0], coeff[4],
-                                coeff[5], 0.0, initial_occupancy, true);
+                                coeff[5], 0.0, initial_occupancy, true, const_hub);
 
             this->hubbard_correction_ = true;
         }
@@ -861,7 +870,7 @@ Atom_type::read_hubbard_input()
                 int n    = e.n;
                 auto aqn = e.am;
                 add_hubbard_orbital(n, aqn.l(), 0, 0, 0, nullptr, 0, 0, 0.0, std::vector<double>(2 * aqn.l() + 1, 0),
-                                    false);
+                                    false, false);
             }
         } else {
             for (int s = 0; s < (int)ps_atomic_wfs_.size(); s++) {
@@ -875,7 +884,7 @@ Atom_type::read_hubbard_input()
                     if ((ho.atom_type() == this->label()) && ((ho.n() != n) || (ho.l() != aqn.l()))) {
                         // we add it to the list but we only use it for the orthogonalization procedure
                         add_hubbard_orbital(n, aqn.l(), 0, 0, 0, nullptr, 0, 0, 0.0,
-                                            std::vector<double>(2 * aqn.l() + 1, 0), false);
+                                            std::vector<double>(2 * aqn.l() + 1, 0), false, false);
                         break;
                     }
                 }
@@ -887,7 +896,7 @@ Atom_type::read_hubbard_input()
 void
 Atom_type::add_hubbard_orbital(int n__, int l__, double occ__, double U, double J, const double* hub_coef__,
                                double alpha__, double beta__, double J0__, std::vector<double> initial_occupancy__,
-                               const bool use_for_calculations__)
+                               const bool use_for_calculations__, const bool use_for_constrained_calculations__)
 {
     if (n__ <= 0) {
         RTE_THROW("negative principal quantum number");
@@ -929,7 +938,7 @@ Atom_type::add_hubbard_orbital(int n__, int l__, double occ__, double U, double 
     indexr_hub_.add(angular_momentum(l__));
     /* add Hubbard orbital descriptor to a list */
     lo_descriptors_hub_.emplace_back(n__, l__, -1, occ__, J, U, hub_coef__, alpha__, beta__, J0__, initial_occupancy__,
-                                     std::move(s.interpolate()), use_for_calculations__, idx_rf);
+                                     std::move(s.interpolate()), use_for_calculations__, use_for_constrained_calculations__, idx_rf);
 }
 
 } // namespace sirius

@@ -315,44 +315,43 @@ Occupation_matrix::symmetrize()
                 if (ctx_.num_mag_dims() == 3) {
                     int s_idx[2][2] = {{0, 3}, {2, 1}};
                     for (int m1 = 0; m1 < lmmax_at; m1++) {
-                        for (int m2 = 0; m2 < lmmax_at; m2++) {
-
-                            std::complex<double> dm[2][2];
-                            std::complex<double> dm1[2][2] = {{0.0, 0.0}, {0.0, 0.0}};
-                            for (int s1 = 0; s1 < ctx_.num_spins(); s1++) {
-                                for (int s2 = 0; s2 < ctx_.num_spins(); s2++) {
-                                    dm[s1][s2] = dm_ia(m1, m2, s_idx[s1][s2]);
-                                }
-                            }
-
-                            for (int i = 0; i < 2; i++) {
-                                for (int j = 0; j < 2; j++) {
-                                    for (int s1p = 0; s1p < 2; s1p++) {
-                                        for (int s2p = 0; s2p < 2; s2p++) {
-                                            dm1[i][j] +=
-                                                dm[s1p][s2p] * spin_rot_su2(i, s1p) * std::conj(spin_rot_su2(j, s2p));
-                                        }
-                                    }
-                                }
-                            }
-
-                            for (int s1 = 0; s1 < ctx_.num_spins(); s1++) {
-                                for (int s2 = 0; s2 < ctx_.num_spins(); s2++) {
-                                    local_[at_lvl](m1, m2, s_idx[s1][s2]) += dm1[s1][s2];
-                                }
-                            }
+                      for (int m2 = 0; m2 < lmmax_at; m2++) {
+                        std::complex<double> dm[2][2];
+                        std::complex<double> dm1[2][2] = {{0.0, 0.0}, {0.0, 0.0}};
+                        for (int s1 = 0; s1 < ctx_.num_spins(); s1++) {
+                          for (int s2 = 0; s2 < ctx_.num_spins(); s2++) {
+                            dm[s1][s2] = dm_ia(m1, m2, s_idx[s1][s2]);
+                          }
                         }
+                        
+                        for (int i = 0; i < 2; i++) {
+                          for (int j = 0; j < 2; j++) {
+                            for (int s1p = 0; s1p < 2; s1p++) {
+                              for (int s2p = 0; s2p < 2; s2p++) {
+                                dm1[i][j] +=
+                                  dm[s1p][s2p] * spin_rot_su2(i, s1p) * std::conj(spin_rot_su2(j, s2p));
+                          }
+                            }
+                          }
+                        }
+                        
+                        for (int s1 = 0; s1 < ctx_.num_spins(); s1++) {
+                          for (int s2 = 0; s2 < ctx_.num_spins(); s2++) {
+                            local_[at_lvl](m1, m2, s_idx[s1][s2]) += dm1[s1][s2];
+                          }
+                        }
+                      }
                     }
                 }
             }
         }
     }
-
+    
     if (ctx_.cfg().hubbard().nonlocal().size() && ctx_.num_mag_dims() == 3) {
-        RTE_THROW("non-collinear nonlocal occupancy symmetrization is not implemented");
+      RTE_THROW("non-collinear nonlocal occupancy symmetrization is not implemented");
     }
-
-    /* a pair of "total number, offests" for the Hubbard orbitals indexing */
+    
+    /* a pair of "total number, offsets" for the Hubbard orbitals indexing */
     auto r = ctx_.unit_cell().num_hubbard_wf();
 
     for (int i = 0; i < static_cast<int>(ctx_.cfg().hubbard().nonlocal().size()); i++) {
@@ -448,18 +447,17 @@ Occupation_matrix::init()
         auto const& atom = ctx_.unit_cell().atom(ia);
 
         if (atom.type().lo_descriptor_hub(atomic_orbitals_[at_lvl].second).use_for_calculation()) {
-
             int il            = atom.type().lo_descriptor_hub(atomic_orbitals_[at_lvl].second).l();
             const int lmax_at = 2 * il + 1;
             if (atom.type().lo_descriptor_hub(atomic_orbitals_[at_lvl].second).initial_occupancy().size()) {
               /* if we specify the occcupancy in the input file */
               for (int ispn = 0; ispn < ctx_.num_spins(); ispn++) {
-                    for (int m = 0; m < lmax_at; m++) {
-                        this->local_[at_lvl](m, m, ispn) = atom.type()
-                                                               .lo_descriptor_hub(atomic_orbitals_[at_lvl].second)
-                                                               .initial_occupancy()[m + ispn * lmax_at];
-                    }
+                for (int m = 0; m < lmax_at; m++) {
+                  this->local_[at_lvl](m, m, ispn) = atom.type()
+                    .lo_descriptor_hub(atomic_orbitals_[at_lvl].second)
+                    .initial_occupancy()[m + ispn * lmax_at];
                 }
+              }
             } else {
                 // compute the total charge for the hubbard orbitals
                 double charge = atom.type().lo_descriptor_hub(atomic_orbitals_[at_lvl].second).occupancy();
@@ -538,6 +536,36 @@ Occupation_matrix::init()
     print_occupancies(2);
 }
 
+void Occupation_matrix::calculate_constraints_and_error()
+{
+  if (!check_constrained_error_ok()) {
+    double error_ = 0.0;
+    int num_elem_ = 0;
+#pragma omp parallel for schedule(static) reduction(+:error_, num_elem_)
+    for (int at_lvl = 0; at_lvl < static_cast<int>(local_.size()); at_lvl++) {
+      const int ia     = atomic_orbitals_[at_lvl].first;
+      auto const& atom = ctx_.unit_cell().atom(ia);
+      if (atom.type().lo_descriptor_hub(atomic_orbitals_[at_lvl].second).use_for_calculation() &&
+          atom.type().lo_descriptor_hub(atomic_orbitals_[at_lvl].second).use_for_constrained_hubbard()) {
+        int il            = atom.type().lo_descriptor_hub(atomic_orbitals_[at_lvl].second).l();
+        const int lmax_at = 2 * il + 1;
+        for (int is = 0; is < ctx_.num_spins(); is++) {
+          for (int m1 = 0; m1 < lmax_at; m1++) {
+            for (int m2 = 0; m2 < lmax_at; m2++) {
+              std::complex<double> tmp = this->local_[at_lvl](m2, m1, is) - this->local_constraints_[at_lvl](m2, m1, is);
+              multipliers_constraints_[at_lvl](m2, m1, is) += tmp * ctx_.cfg().hubbard().hubbard_beta_mixing();
+              error_ += std::abs(tmp);
+              num_elem_++;
+            }
+          }
+        }
+      }
+    }
+    this->constraint_error_ = error_ / static_cast<double>(num_elem_);
+    this->num_steps_++;
+  }
+}
+
 void
 Occupation_matrix::print_occupancies(int verbosity__) const
 {
@@ -581,5 +609,4 @@ Occupation_matrix::print_occupancies(int verbosity__) const
         }
     }
 }
-
 } // namespace sirius

@@ -728,6 +728,18 @@ sirius_set_parameters:
       type: bool
       attr: in, optional
       doc: Use all atomic orbitals found in all ps potentials to compute the orthogonalization operator.
+    apply_constrained_hubbard:
+      type: bool
+      attr: in, optional
+      doc: Apply constrained hubbard.
+    hub_max_iter:
+      type: int
+      attr: in, optional
+      doc: Maximum number of iterations to apply the hubbard constraints
+    hub_cons_error:
+      type: double
+      attr: in, optional
+      doc: tolerance 
     hubbard_orbitals:
       type: string
       attr: in, optional
@@ -770,7 +782,8 @@ sirius_set_parameters(void* const* handler__, int const* lmax_apw__, int const* 
                       bool const* so_correction__, char const* valence_rel__, char const* core_rel__,
                       double const* iter_solver_tol_empty__,
                       char const* iter_solver_type__, int const* verbosity__, bool const* hubbard_correction__,
-                      int const* hubbard_correction_kind__, bool const* hubbard_full_orthogonalization__,
+                      int const* hubbard_correction_kind__, bool const* hubbard_full_orthogonalization__, bool const* apply_constrained_hubbard__,
+                      int const* hub_max_iter__, double const* hub_cons_error__,
                       char const* hubbard_orbitals__, int const* sht_coverage__, double const* min_occupancy__,
                       char const* smearing__, double const* smearing_width__, double const* spglib_tol__,
                       char const* electronic_structure_method__, int* error_code__)
@@ -842,6 +855,25 @@ sirius_set_parameters(void* const* handler__, int const* lmax_apw__, int const* 
                     sim_ctx.cfg().hubbard().full_orthogonalization(true);
                 }
             }
+
+            if (apply_constrained_hubbard__ != nullptr) {
+                if (*apply_constrained_hubbard__) {
+                    sim_ctx.cfg().hubbard().constrained_hubbard_calculation(true);
+                }
+            }
+
+            if (hub_max_iter__ != nullptr) {
+                if (*hub_max_iter__ > 0) {
+                    sim_ctx.cfg().hubbard().constrained_hubbard_max_iteration(*hub_max_iter__);
+                }
+            }
+
+            if (hub_cons_error__ != nullptr) {
+                if (*hub_cons_error__) {
+                    sim_ctx.cfg().hubbard().constrained_hubbard_error(true);
+                }
+            }
+
             if (hubbard_orbitals__ != nullptr) {
                 std::string s(hubbard_orbitals__);
                 std::transform(s.begin(), s.end(), s.begin(), ::tolower);
@@ -2203,6 +2235,10 @@ sirius_set_atom_type_hubbard:
       type: double
       attr: in, required
       doc: J0 for the simple interaction treatment.
+    constrained_hubbard:
+      type: bool
+      attr: in, optional
+      doc: Constrain the hubbard occupation numbers to a definite value
     error_code:
       type: int
       attr: out, optional
@@ -2212,7 +2248,7 @@ sirius_set_atom_type_hubbard:
 void
 sirius_set_atom_type_hubbard(void* const* handler__, char const* label__, int const* l__, int const* n__,
                              double const* occ__, double const* U__, double const* J__, double const* alpha__,
-                             double const* beta__, double const* J0__, int* error_code__)
+                             double const* beta__, double const* J0__, bool constrained_hubbard__, int* error_code__)
 {
     call_sirius(
         [&]() {
@@ -2220,7 +2256,7 @@ sirius_set_atom_type_hubbard(void* const* handler__, char const* label__, int co
             auto& type    = sim_ctx.unit_cell().atom_type(std::string(label__));
             type.hubbard_correction(true);
             type.add_hubbard_orbital(*n__, *l__, *occ__, *U__, J__[1], J__, *alpha__, *beta__, *J0__,
-                                     std::vector<double>(), true);
+                                     std::vector<double>(), true, constrained_hubbard__);
         },
         error_code__);
 }

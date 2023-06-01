@@ -238,6 +238,9 @@ class Atom_type
     /// Hubbard correction.
     bool hubbard_correction_{false};
 
+    /// run calculations with U term starting with a constrained occupancy
+    bool constrained_hubbard_{false};
+
     /// Inverse of (Q_{\xi \xi'j}^{-1} + beta_pw^{H}_{\xi} * beta_pw_{xi'})
     /** Used in Chebyshev iterative solver as a block-diagonal preconditioner */
     sddk::matrix<std::complex<double>> p_mtrx_;
@@ -374,7 +377,7 @@ class Atom_type
         l+1/2 and l-1/2 states. */
     void add_hubbard_orbital(int n__, int l__, double occ__, double U, double J, const double* hub_coef__,
                              double alpha__, double beta__, double J0__, std::vector<double> initial_occupancy__,
-                             const bool use_for_calculations__);
+                             const bool use_for_calculations__, const bool use_for_constrained_calculations__);
 
     /// Print basic info to standard output.
     void print_info(std::ostream& out__) const;
@@ -1047,6 +1050,19 @@ class Atom_type
     inline bool hubbard_correction() const
     {
         return hubbard_correction_;
+    }
+
+    /// Get the constrained hubbard correction switch.
+    inline bool hubbard_constrained() const
+    {
+       return constrained_hubbard_;
+    }
+
+    /// Set the constrained hubbard correction switch.
+    inline bool hubbard_constrained(bool ldapu__)
+    {
+       this->constrained_hubbard_ = ldapu__;
+       return constrained_hubbard_;
     }
 
     /// Set the Hubbard correction switch.

@@ -48,6 +48,10 @@ Hubbard_matrix::Hubbard_matrix(Simulation_context& ctx__)
 
         local_ = std::vector<sddk::mdarray<std::complex<double>, 3>>(num_atomic_level);
 
+        if (ctx_.cfg().hubbard().constrained_hubbard_calculation()) {
+            local_constraints_ = std::vector<sddk::mdarray<std::complex<double>, 3>>(num_atomic_level);
+            multipliers_constraints_ = std::vector<sddk::mdarray<std::complex<double>, 3>>(num_atomic_level);
+        }
         /* the offsets here match the offsets of the hubbard wave functions but
          * are more fine grained. The offsets of the hubbard wave functions are
          * for atom while here they are for each atomic level. Since all atomic
@@ -68,6 +72,12 @@ Hubbard_matrix::Hubbard_matrix(Simulation_context& ctx__)
 
             local_[at_lvl] = sddk::mdarray<std::complex<double>, 3>(mmax, mmax, 4, sddk::memory_t::host, "local_hubbard");
             local_[at_lvl].zero();
+
+            if (ctx_.cfg().hubbard().constrained_hubbard_calculation()) {
+                local_constraints_[at_lvl] = sddk::mdarray<std::complex<double>, 3>(mmax, mmax, 4, sddk::memory_t::host, "local_hubbard_constraint");
+                multipliers_constraints_[at_lvl] = sddk::mdarray<std::complex<double>, 3>(mmax, mmax, 4, sddk::memory_t::host, "lagrange_multiplier_constraint");
+                multipliers_constraints_[at_lvl].zero();
+            }
             size += mmax;
         }
 
@@ -190,6 +200,10 @@ Hubbard_matrix::print_local(int at_lvl__, std::ostream& out__) const
             out__ << std::endl;
         }
         out__ << utils::hbar(2 * width * mmax + 3, '-') << std::endl;
+    }
+
+    if (ctx_.cfg().hubbard().constrained_hubbard_calculation()) {
+        out__ << "Hubbar constraint error (l2-norm): " << constraint_error_ << std::endl;
     }
 }
 

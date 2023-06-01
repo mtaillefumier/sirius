@@ -241,9 +241,9 @@ class config_t
         }
         /// Scaling parameters of the iterative  solver tolerance.
         /**
-            First number is the scaling of density RMS, that gives the estimate of the new
-            tolerance. Second number is the scaling of the old tolerance. New tolerance is then the minimum
-            between the two. This is how it is done in the code:
+            First number is the scaling of density RMS, that gives the estimate of the new 
+            tolerance. Second number is the scaling of the old tolerance. New tolerance is then the minimum 
+            between the two. This is how it is done in the code: 
             \code{.cpp}
             double old_tol = ctx_.iterative_solver_tolerance();
             // estimate new tolerance of iterative solver
@@ -1498,15 +1498,18 @@ class config_t
             }
             dict_["/nlcg/tol"_json_pointer] = tol__;
         }
-        /// nlcg processing unit
-        inline auto processing_unit() const
+        /// NLCG processing unit
+        inline auto procssing_unit() const
         {
-            if (dict_.contains("/nlcg/processing_unit")) {
-                return dict_.at("/nlcg/processing_unit"_json_pointer).get<std::string>();
-            }
-            return dict_.at("/control/processing_unit"_json_pointer).get<std::string>();
+            return dict_.at("/nlcg/procssing_unit"_json_pointer).get<std::string>();
         }
-
+        inline void procssing_unit(std::string procssing_unit__)
+        {
+            if (dict_.contains("locked")) {
+                throw std::runtime_error(locked_msg);
+            }
+            dict_["/nlcg/procssing_unit"_json_pointer] = procssing_unit__;
+        }
       private:
         nlohmann::json& dict_;
     };
@@ -1677,6 +1680,54 @@ class config_t
             }
             dict_["/hubbard/simplified"_json_pointer] = simplified__;
         }
+        /// Use constrained hubbard occupations number. Occupation matrices should be given
+        inline auto constrained_hubbard_calculation() const
+        {
+            return dict_.at("/hubbard/constrained_hubbard_calculation"_json_pointer).get<bool>();
+        }
+        inline void constrained_hubbard_calculation(bool constrained_hubbard_calculation__)
+        {
+            if (dict_.contains("locked")) {
+                throw std::runtime_error(locked_msg);
+            }
+            dict_["/hubbard/constrained_hubbard_calculation"_json_pointer] = constrained_hubbard_calculation__;
+        }
+        /// Error between the actual and requested occupation numbers
+        inline auto constrained_hubbard_error() const
+        {
+            return dict_.at("/hubbard/constrained_hubbard_error"_json_pointer).get<double>();
+        }
+        inline void constrained_hubbard_error(double constrained_hubbard_error__)
+        {
+            if (dict_.contains("locked")) {
+                throw std::runtime_error(locked_msg);
+            }
+            dict_["/hubbard/constrained_hubbard_error"_json_pointer] = constrained_hubbard_error__;
+        }
+        /// Maximum number of constrained iterations before returning to the normal Hubbard scheme
+        inline auto constrained_hubbard_max_iteration() const
+        {
+            return dict_.at("/hubbard/constrained_hubbard_max_iteration"_json_pointer).get<int>();
+        }
+        inline void constrained_hubbard_max_iteration(int constrained_hubbard_max_iteration__)
+        {
+            if (dict_.contains("locked")) {
+                throw std::runtime_error(locked_msg);
+            }
+            dict_["/hubbard/constrained_hubbard_max_iteration"_json_pointer] = constrained_hubbard_max_iteration__;
+        }
+        /// Mixing parameters for the constrained hubbard
+        inline auto hubbard_beta_mixing() const
+        {
+            return dict_.at("/hubbard/hubbard_beta_mixing"_json_pointer).get<double>();
+        }
+        inline void hubbard_beta_mixing(double hubbard_beta_mixing__)
+        {
+            if (dict_.contains("locked")) {
+                throw std::runtime_error(locked_msg);
+            }
+            dict_["/hubbard/hubbard_beta_mixing"_json_pointer] = hubbard_beta_mixing__;
+        }
         /// Description of the on-site (local) Hubbard interaction
         class local_t
         {
@@ -1690,6 +1741,10 @@ class config_t
             auto atom_type() const
             {
                 return dict_.at("atom_type").get<std::string>();
+            }
+            auto use_hubbard_constrained() const
+            {
+                return dict_.at("use_hubbard_constrained").get<bool>();
             }
             auto n() const
             {
